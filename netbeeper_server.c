@@ -2,7 +2,7 @@
  * netbeeper_server : serveur qui va de pair avec netbeeper.py. Le serveur est chargé de recevoir les notes que parse netbeeper.py et de les jouer. Nécessite un acces à /dev/tty0 (utilisateur dans le groupe tty)
  * Compilation : gcc netbeeper_server.c -Wall -c=std11 -lpthread -o netbeeper_server
  * Écrit par Linuxomaniac, sous licence GPLv3
-*/
+ */
 
 #define PORT 4242
 #define DELAY_CORRECTION - 0.13// Correction empirique du délai
