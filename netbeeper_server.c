@@ -57,6 +57,28 @@ typedef struct paquet {
 // Global, pas top, cependant il faut que la fonction handle_signal() puisse y accéder
 int console_fd = -1;
 
+int recv_exact(int sock, paquet *out_buf, unsigned int size) {
+	int n;
+	unsigned int bytes_to_get = size, copied_so_far = 0;
+	char raw_buf[size];
+
+	while((n = recv(sock, raw_buf, bytes_to_get, 0)) > 0) {
+		memcpy(out_buf + copied_so_far, raw_buf, n);
+		copied_so_far += n;
+		bytes_to_get -= n;
+
+		if(bytes_to_get == 0) {
+			break;
+		}
+	}
+
+	if(n > 0) {
+		n = size;
+	}
+
+	return n;
+}
+
 // Un petit truc pour sleep précisément
 void msleep(double milisec) {
 	struct timespec req;
@@ -130,7 +152,7 @@ void *play_beep(void *args) {
 	}
 
 	printf("En attente du signal...");
-	if(recv(newsock, &buf, sizeof(buf), 0) < 0) {
+	if(recv_exact(newsock, &buf, sizeof(buf)) < 0) {
 		printf("\nErreur :");
 		perror("Recv");
 		close(params->sock);
@@ -216,7 +238,7 @@ int main(void) {
 		}
 
 		printf("Une connexion ! En attente de la sauce...");
-		if(recv(newsock, &buf, sizeof(paquet), 0) > 0) {
+		if(recv_exact(newsock, &buf, sizeof(paquet)) > 0) {
 			if(buf.status == PAQUET_AREUREADY && buf.data1 == 0 && buf.data2 == 0 && buf.data3 == 0) {
 				printf(" Okay !\n");
 
@@ -242,7 +264,7 @@ int main(void) {
 		printf("Réception des données...");
 
 		while(1) {
-			if((n = recv(newsock, &buf, sizeof(paquet), 0)) > 0) {
+			if((n = recv_exact(newsock, &buf, sizeof(paquet))) > 0) {
 				if(buf.status == PAQUET_NOTE && (buf.data1 != 0 || buf.data2 != 0 || buf.data3 != 0)) {
 					current->freq = buf.data1;
 					current->length = buf.data2;
@@ -275,7 +297,7 @@ int main(void) {
 			buf.data3 = 0;
 			send(newsock, &buf, sizeof(paquet), 0);
 
-			if((n = recv(newsock, &buf, sizeof(paquet), 0)) > 0) {
+			if((n = recv_exact(newsock, &buf, sizeof(paquet))) > 0) {
 				if(buf.status == PAQUET_OKSTART && buf.data1 == 0 && buf.data2 == 0 && buf.data3 == 0) {
 					printf("Tout le monde est prêt !\n");
 				} else {
@@ -300,7 +322,7 @@ int main(void) {
 					exit(6);
 				}
 
-				while((n = recv(newsock, &buf, sizeof(paquet), 0)) > 0) {
+				while((n = recv_exact(newsock, &buf, sizeof(paquet))) > 0) {
 					// Tant qu'on reçoit des données, on les jette
 				}
 			}
